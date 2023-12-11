@@ -69,6 +69,22 @@ end
 @assert count_top_color(Bottle([NC,1,1,1])) == 3
 @assert count_top_color(Bottle([NC,NC,NC])) == 3
 
+"""test if Bottle is filled with only one color (excluding empty slots)"""
+function is_unicolor(a::Bottle)
+    c = top_color(a)
+    for ai in a
+        if ai != c && ai != NC
+            return false
+        end
+    end
+    return true
+end
+
+# tests
+@assert is_unicolor(Bottle([NC,NC]))
+@assert is_unicolor(Bottle([NC,1,1]))
+@assert ! is_unicolor(Bottle([NC,1,1,2]))
+
 color_format(i) = i!=NC ? string(i; base=16) : "_"#␣∅
 
 "single line printing of a Bottle"
@@ -148,16 +164,24 @@ function children(v::Bottles)
         c_source = top_color(source)
         c_dest = top_color(dest)
 
+        # empty source
         if c_source == NC
             continue
         end
 
-        if c_dest != NC && c_source != c_dest
+        # destination not empty or of same color as source
+        if c_dest != NC && c_dest != c_source
             continue
         end
 
+        # no place left in destination
         n_empty_dest = count_empty(dest)
         if n_empty_dest == 0
+            continue
+        end
+
+        # useless switch move
+        if c_dest == NC && is_unicolor(source)
             continue
         end
 
@@ -181,3 +205,5 @@ function children(v::Bottles)
 end
 
 children([a,b,c,d,e])
+
+children([Bottle([1,1]),Bottle([NC,1])]) # remove other useless move?
