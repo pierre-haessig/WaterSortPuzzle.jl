@@ -16,6 +16,9 @@ function Base.isless(a::Bottle, b::Bottle)
     for (ai, bi) in zip(a,b)
         if ai < bi
             return true
+        elseif ai > bi
+            return false
+        #else ai==bi: continue to next (ai,bi) pair
         end
     end
     return false
@@ -84,6 +87,16 @@ end
 @assert is_unicolor(Bottle([NC,NC]))
 @assert is_unicolor(Bottle([NC,1,1]))
 @assert ! is_unicolor(Bottle([NC,1,1,2]))
+
+"""test if Bottle is exactly unicolor (i.e. full or empty)"""
+all_equal(a::Bottle) = all(ai -> ai==a[1], a)
+# tests
+@assert all_equal(Bottle([NC,NC]))
+@assert all_equal(Bottle([1,1]))
+@assert !all_equal(Bottle([NC,1]))
+
+"""test if Bottles position is solved: only filled with one color or empty"""
+is_solved(pos::Bottles) = all(all_equal, pos)
 
 color_format(i) = i!=NC ? string(i; base=16) : "_"#␣∅
 
@@ -204,6 +217,78 @@ function children(v::Bottles)
     return c
 end
 
+"""
+
+
+        while not pos.isgoal():
+            for m in pos:
+                c = m.canonical()
+                if c in trail:
+                    continue
+                trail[intern(c)] = pos
+                load(m)
+            pos = queue.pop()
+
+        while pos:
+            solution.appendleft(pos)
+            pos = trail[pos.canonical()]
+
+        return list(solution)
+"""
+function solve(pos::Bottles)
+    queue = Queue{Bottles}()
+    #enqueue!(queue, pos)
+    trail = Dict{Bottles,Bottles}() # backward solution trail
+    solution = Queue{Bottles}() # forward solution trail
+
+    node_count = 0
+    while ! is_solved(pos)
+        for m in children(pos)
+            node_count += 1
+            c = sort(m)
+            if haskey(trail, c)  # already visited
+                continue
+            end
+            # save backward shortest path:
+            trail[c] = pos
+            enqueue!(queue, m) # not canonical position
+        end
+        #println(pos, length(queue))
+        pos = dequeue!(queue)
+    end
+
+    # build forward solution path
+    while pos !== nothing
+        enqueue!(solution, pos)
+        pos = get(trail, sort(pos), nothing)
+    end
+
+    return solution, node_count
+end
+
 children([a,b,c,d,e])
 
 children([Bottle([1,1]),Bottle([NC,1])]) # remove other useless move?
+
+# Game example: Level 13 from Lipuzz
+L13 = [
+    #1: orange, 2 gray, 3: yellow, 4: green, 5: blue
+    #6: light blue, 7: purple
+    Bottle([1,2,3,3]),
+    Bottle([1,4,5,2]),
+    Bottle([6,1,5,6]),
+    Bottle([7,4,7,6]),
+    Bottle([7,1,5,2]),
+    Bottle([3,4,2,3]),
+    Bottle([5,7,6,4]),
+    Bottle([NC,NC,NC,NC]),
+    Bottle([NC,NC,NC,NC])
+]
+
+sol, node_count = solve(L13)
+
+#println(collect(reverse_iter(sol)))
+println("Solution to 13 in ", length(sol), " moves ", node_count, " nodes explored:")
+for pos in reverse_iter(sol)
+    println(pos)
+end
