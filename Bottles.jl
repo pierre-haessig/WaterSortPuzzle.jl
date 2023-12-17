@@ -271,7 +271,7 @@ children([a,b,c,d,e])
 children([Bottle([1,1]),Bottle([NC,1])]) # remove other useless move?
 
 # Game example: Level 13 from Lipuzz
-L13 = [
+const L13 = [
     #1: orange, 2 gray, 3: yellow, 4: green, 5: blue
     #6: light blue, 7: purple
     Bottle([1,2,3,3]),
@@ -289,6 +289,29 @@ sol, node_count = solve(L13)
 
 #println(collect(reverse_iter(sol)))
 println("Solution to 13 in ", length(sol), " moves ", node_count, " nodes explored:")
+for pos in reverse_iter(sol)
+    println(pos)
+end
+
+# Game example: Level 31 from Lipuzz
+const L31 = [
+    #1: orange, 2 light blue, 3: blue, 4: yellow, 5: green
+    #6: red, 7: gray, 8: dark green, 9 purple
+    Bottle([1,2,2,3]),
+    Bottle([4,4,3,5]),
+    Bottle([6,2,3,7]),
+    Bottle([4,8,9,1]),
+    Bottle([1,6,2,5]),
+    Bottle([9,9,6,1]),
+    Bottle([3,8,7,8]),
+    Bottle([7,6,8,4]),
+    Bottle([9,7,5,5]),
+    Bottle([NC,NC,NC,NC]),
+    Bottle([NC,NC,NC,NC])
+]
+
+sol, node_count = solve(L31)
+println("Solution to 31 in ", length(sol), " moves ", node_count, " nodes explored:")
 for pos in reverse_iter(sol)
     println(pos)
 end
