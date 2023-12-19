@@ -1,6 +1,7 @@
 #Experiments to represent, solve and analyze the Bottled colors puzzle
 #PH, nov 2023
 using DataStructures
+using Crayons
 
 const ColorType = UInt8
 "No color, i.e. empty slot"
@@ -9,6 +10,18 @@ const NC = typemax(UInt8)
 const Bottle = Vector{UInt8}
 const Bottles = Vector{Bottle}
 
+
+palette = Dict(
+    1=>166, # orange
+    2=>006, # light blue
+    3=>004, # blue
+    4=>011, # yellow
+    5=>010, # green
+    6=>009, # red
+    7=>008, # gray
+    8=>002, # dark green
+    9=>005  # purple
+    )
 
 """comparison of two Bottles, based on lexicographic order"""
 function Base.isless(a::Bottle, b::Bottle)
@@ -98,7 +111,19 @@ all_equal(a::Bottle) = all(ai -> ai==a[1], a)
 """test if Bottles position is solved: only filled with one color or empty"""
 is_solved(pos::Bottles) = all(all_equal, pos)
 
-color_format(i) = i!=NC ? string(i; base=16) : "_"#␣∅
+function color_format(i)
+    if i==NC
+        return "_"#␣∅
+    else
+        s = string(i; base=16)
+        if i in keys(palette)
+            c = Crayon(background=palette[i])
+            cr = Crayon(reset=true)
+            s = string(c)*s*string(cr)
+        end
+        return s
+    end
+end
 
 "single line printing of a Bottle"
 function Base.show(io::IO, a::Bottle)
@@ -292,6 +317,8 @@ println("Solution to 13 in ", length(sol), " moves ", node_count, " nodes explor
 for pos in reverse_iter(sol)
     println(pos)
 end
+
+
 
 # Game example: Level 31 from Lipuzz
 const L31 = [
