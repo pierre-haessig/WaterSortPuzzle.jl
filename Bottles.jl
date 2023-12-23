@@ -38,7 +38,7 @@ function Base.isless(a::Bottle, b::Bottle)
 end
 
 """is Bottle a full?"""
-isfull(a::Bottle) = a[1] != NC
+is_full(a::Bottle) = a[1] != NC
 
 "count number of empty slots on top of Bottle a"
 function count_empty(a::Bottle)
@@ -110,6 +110,36 @@ all_equal(a::Bottle) = all(ai -> ai==a[1], a)
 
 """test if Bottles position is solved: only filled with one color or empty"""
 is_solved(pos::Bottles) = all(all_equal, pos)
+
+
+"""
+    is_consistent(v::Bottles)
+
+Test the consistency of the Bottles vector, i.e. whether it is a valid Water sort game.
+
+Consistency requires that, for each color, the total number of color slots
+across all bottles is equal to the Bottle length.
+"""
+function is_consistent(v::Bottles)
+    color_counts = Dict{ColorType,Int}()
+    n_bottles = length(v)
+    bottle_size = length(v[1])
+    for a in v
+        for ai in a
+            if ai == NC
+                continue
+            end
+            # increment color counter
+            color_counts[ai] = get(color_counts, ai, 0) +1
+        end
+    end
+    consistent = all(
+        n -> n== bottle_size,
+        values(color_counts)
+    )
+    return consistent
+end
+
 
 function color_format(i)
     if i==NC
@@ -291,9 +321,33 @@ function solve(pos::Bottles)
     return solution, node_count
 end
 
+function display_solution(sol, node_count)
+    println("Water sort puzzled solved in ", length(sol), " moves ", node_count, " nodes explored:")
+    for pos in reverse_iter(sol)
+        println(pos)
+    end
+end
+
 children([a,b,c,d,e])
 
 children([Bottle([1,1]),Bottle([NC,1])]) # remove other useless move?
+
+# Game example: Level 2 from Lipuzz
+const L2 = [
+    #1: yellow, 2 brown, 3: purple,
+    Bottle([1,2,3,1]),
+    Bottle([1,2,3,3]),
+    Bottle([3,1,2,2]),
+    #Bottle([NC,NC,NC,NC]),  2nd empty bottle not necessary
+    Bottle([NC,NC,NC,NC])
+]
+@assert is_consistent(L2) "Puzzle L2 is not valid"
+
+sol, node_count = solve(L2)
+println("### Level 2 ###")
+display_solution(sol, node_count)
+println()
+
 
 # Game example: Level 13 from Lipuzz
 const L13 = [
@@ -309,16 +363,12 @@ const L13 = [
     Bottle([NC,NC,NC,NC]),
     Bottle([NC,NC,NC,NC])
 ]
+@assert is_consistent(L13) "Puzzle L13 is not valid"
 
 sol, node_count = solve(L13)
-
-#println(collect(reverse_iter(sol)))
-println("Solution to 13 in ", length(sol), " moves ", node_count, " nodes explored:")
-for pos in reverse_iter(sol)
-    println(pos)
-end
-
-
+println("### Level 13 ###")
+display_solution(sol, node_count)
+println()
 
 # Game example: Level 31 from Lipuzz
 const L31 = [
@@ -336,9 +386,8 @@ const L31 = [
     Bottle([NC,NC,NC,NC]),
     Bottle([NC,NC,NC,NC])
 ]
+@assert is_consistent(L31) "Puzzle L31 is not valid"
 
 sol, node_count = solve(L31)
-println("Solution to 31 in ", length(sol), " moves ", node_count, " nodes explored:")
-for pos in reverse_iter(sol)
-    println(pos)
-end
+println("### Level 31 ###")
+display_solution(sol, node_count)
