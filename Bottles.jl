@@ -272,58 +272,119 @@ function children(v::Bottles)
     return c
 end
 
+
 """
+    solve(pos::Bottles; max_nodes_enum=-1, max_nodes_eval=-1, max_depth=-1)
 
+solve Water sort puzzle from position `pos`
 
-        while not pos.isgoal():
-            for m in pos:
-                c = m.canonical()
-                if c in trail:
-                    continue
-                trail[intern(c)] = pos
-                load(m)
-            pos = queue.pop()
-
-        while pos:
-            solution.appendleft(pos)
-            pos = trail[pos.canonical()]
-
-        return list(solution)
+Extra optional parameters can limit the search:
+- `max_nodes_enum`: maximum number of enumerated nodes
+  ("enumerated" means *not yet evaluated* or dismissed for being a duplicate)
+- `max_nodes_eval`: maximum number of evaluated nodes
+  (should be ≤ `max_nodes_enum``)
+- `max_depth`: maximal graph depth
 """
-function solve(pos::Bottles)
-    queue = Queue{Bottles}()
-    #enqueue!(queue, pos)
+function solve(pos::Bottles; max_nodes_enum=-1, max_nodes_eval=-1, max_depth=-1)
+    # Graph search data structure
+    queue = Queue{Tuple{Int,Bottles}}()
     trail = Dict{Bottles,Bottles}() # backward solution trail
-    solution = Queue{Bottles}() # forward solution trail
+    solution = Queue{Bottles}() # forward solution trail (used only if success)
 
-    node_count = 0
-    while ! is_solved(pos)
-        for m in children(pos)
-            node_count += 1
+    # Status flags and counters
+    nodes_enum_count = 1
+    nodes_eval_count = 1
+    depth = 0
+    status = :RUNNING
+    success = false
+
+    while true # iterate on pos
+        for m in children(pos) # browse of children of pos
+            nodes_enum_count += 1
+            if max_nodes_enum > 0 && nodes_enum_count > max_nodes_enum
+                status = :MAX_NODES_ENUM
+                break # for loop
+            end
+
+            # Canonicalize position
             c = sort(m)
-            if haskey(trail, c)  # already visited
+            # Check if already visited
+            if haskey(trail, c)
                 continue
             end
-            # save backward shortest path:
+
+            # Save backward shortest path:
             trail[c] = pos
-            enqueue!(queue, m) # not canonical position
+
+            # Store the uncanonicalized position (makes solution easier to read)
+            enqueue!(queue, (depth+1,m))
+        end # for each children of pos
+
+        if status == :MAX_NODES_ENUM
+            break
         end
-        #println(pos, length(queue))
-        pos = dequeue!(queue)
+
+        # Move on to next to position for evaluation and children enumeration
+        if length(queue) > 0
+            depth, pos = dequeue!(queue)
+            nodes_eval_count += 1
+        else
+            status = :NO_SOLUTION
+            break
+        end
+
+        # Stop search early if max_* reached
+        if max_depth > 0 && depth > max_depth
+            status = :MAX_DEPTH
+            break
+        end
+        if max_nodes_eval > 0 && nodes_eval_count > max_nodes_eval
+            status = :MAX_NODES_EVAL
+            break
+        end
+
+        if is_solved(pos)
+            status = :SOLVED
+            success = true
+            break
+        end
+    end # while true (iteration on dequeued pos)
+
+    # Build the forward `solution` path
+    if status == :SOLVED
+        while pos !== nothing
+            enqueue!(solution, pos)
+            pos = get(trail, sort(pos), nothing)
+        end
+        solution_list = collect(reverse_iter(solution))
+    else
+        solution_list = []
     end
 
-    # build forward solution path
-    while pos !== nothing
-        enqueue!(solution, pos)
-        pos = get(trail, sort(pos), nothing)
-    end
-
-    return solution, node_count
+    info = (
+        success = success,
+        status = status,
+        depth = depth,
+        nodes_enum_count = nodes_enum_count,
+        nodes_eval_count = nodes_eval_count,
+    )
+    return solution_list, trail, info
 end
 
-function display_solution(sol, node_count)
-    println("Water sort puzzled solved in ", length(sol), " moves ", node_count, " nodes explored:")
-    for pos in reverse_iter(sol)
+
+"""
+    display_solution(sol, info)
+
+display puzzle solution obtained from `solve`
+
+Parameters:
+- `sol`: solution list
+- `info`: information NamedTuple
+"""
+function display_solution(sol, info)
+    println("Water sort puzzled solved in ", length(sol), " moves ",
+            info.nodes_enum_count, " nodes explored:")
+    for pos in sol
         println(pos)
     end
 end
@@ -343,11 +404,10 @@ const L2 = [
 ]
 @assert is_consistent(L2) "Puzzle L2 is not valid"
 
-sol, node_count = solve(L2)
+sol, trail, info = solve(L2)
 println("### Level 2 ###")
-display_solution(sol, node_count)
+display_solution(sol, info)
 println()
-
 
 # Game example: Level 13 from Lipuzz
 const L13 = [
@@ -365,9 +425,9 @@ const L13 = [
 ]
 @assert is_consistent(L13) "Puzzle L13 is not valid"
 
-sol, node_count = solve(L13)
+sol, trail, info = solve(L13)
 println("### Level 13 ###")
-display_solution(sol, node_count)
+display_solution(sol, info)
 println()
 
 # Game example: Level 31 from Lipuzz
@@ -388,6 +448,6 @@ const L31 = [
 ]
 @assert is_consistent(L31) "Puzzle L31 is not valid"
 
-sol, node_count = solve(L31)
+sol, trail, info = solve(L31)
 println("### Level 31 ###")
-display_solution(sol, node_count)
+display_solution(sol, info)
