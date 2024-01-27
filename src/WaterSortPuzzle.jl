@@ -1,3 +1,5 @@
+module WaterSortPuzzle
+
 #Experiments to represent, solve and analyze the Bottled colors puzzle
 #PH, nov 2023
 using DataStructures
@@ -451,3 +453,5 @@ const L31 = [
 sol, trail, info = solve(L31)
 println("### Level 31 ###")
 display_solution(sol, info)
+
+end # module WaterSortPuzzle

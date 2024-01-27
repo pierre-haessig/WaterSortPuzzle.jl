@@ -1,3 +1,8 @@
+name = "WaterSortPuzzle"
+uuid = "3076e739-f79a-4314-b482-787d7e1b78ca"
+authors = ["Pierre Haessig <pierre.haessig@crans.org>"]
+version = "0.1.0"
+
 [deps]
 Crayons = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
